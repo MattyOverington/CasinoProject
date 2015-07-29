@@ -6,7 +6,7 @@ bwi
 
 
 
-#POKER PROJECT TO-DO 
+#To-Do List
     - Start development of texas holdem html and javascript page
         - get a header done for html
         - re-learn how to code javascript and use it to create the poker game
