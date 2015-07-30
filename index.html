@@ -1,22 +1,110 @@
 <!doctype html>
-	<html>
-		<head>
-			<meta charset="UTF-8">
-			<title>Heart of Diamonds Poker</title>
+    <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Heart of Diamonds Poker</title>
             <link rel="stylesheet" type="text/css" href="bootstrap.css">
-            <script href="casino.js" type="text/javascript">
-		</head>
+            <script type="text/javascript" src="pixi.js"></script>
+        </head>
 
-		<body>
-        
-        	<div id="main_page_content" class="panel panel-default">
-            	<div class="panel panel-heading">
-                	<h3>Texas Holdem Poker</h3>
-                </div>
-        		<div id="main_page_content_body" class="panel-body panel_default">
-        			<canvas id="texas_holdem_canvas"></canvas>
-        		</div>
-        	</div>
-        
-		</body>
-	</html>
+        <body>
+
+
+
+            <script>
+
+//---------------------------------------------------
+//Initialization
+//---------------------------------------------------
+
+var canvas;
+var context;
+var renderer;
+var stage; 
+var deck = [];
+
+initPixi()
+initCards()
+
+
+//---------------------------------------------------
+//Constructors
+//---------------------------------------------------
+
+//Game Constructor
+
+function Game (numberOfPlayers, roundNum, initialCash, initialSmallBlind, blindRaiseInterval, blindRaisePercetage, numberofDecks, players, decks) {
+    this.numberOfPlayers = numberofPlayers;
+    this.roundNum = roundNum;
+    this.initialCash = initialCash;
+    this.initialSmallBlind = initialSmallBlind;
+    this.blindRaiseInterval = blindRaiseInterval;
+    this.blindRaisePercentage = blindRaisePercentage;
+    this.numberOfDecks = numberofDecks;
+    this.players = players;
+    this.decks = decks;
+}
+
+//Card Constructor
+
+function Card (suit, number) {
+    this.suit = suit;
+    this.number = number;
+}
+
+//Player Constructor
+
+function Player (number, colour, name, balance, rank, currentHand) {
+    this.number = number;
+    this.colour = colour;
+    this.name = name;
+    this.balance = balance;
+    this.rank = rank;
+    this.currentHand = currentHand;
+}
+
+//---------------------------------------------------
+//Canvas & Pixi Methods
+//---------------------------------------------------
+
+function initCanvas() {
+    canvas = document.getElementById("texas_holdem_canvas");
+    context = canvas.getContext("2d");
+}
+
+function initPixi() {
+    renderer =  new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.view);
+    stage = new PIXI.Container();
+
+}
+
+//---------------------------------------------------
+//Rendering Methods
+//---------------------------------------------------
+
+
+
+//---------------------------------------------------
+//Card Methods
+//---------------------------------------------------
+
+function initCards() {
+    suits = ["D", "H", "C", "S"]
+
+    for (i = 1, i <= 4, i++) {
+        for (j = 1, j <= 13, j++) {
+            temp = new Card
+            temp.suit = suits[i]
+            temp.number = j;
+            deck.push(temp);
+        }
+    }
+}
+
+
+
+            </script>
+
+        </body>
+    </html>
