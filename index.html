@@ -54,13 +54,13 @@ function Card (suit, number) {
 
 //Player Constructor
 
-function Player (number, colour, name, balance, rank, currentHand) {
+function Player (number, colour, name) {
     this.number = number;
     this.colour = colour;
     this.name = name;
-    this.balance = balance;
-    this.rank = rank;
-    this.currentHand = currentHand;
+    this.balance = 0;
+    this.rank = -1;
+    this.currentHand = []];
 }
 
 //---------------------------------------------------
@@ -100,6 +100,18 @@ function initCards() {
             deck.push(temp);
         }
     }
+}
+
+function dealCard() {
+    
+}
+
+function refillDeck() {
+    initCards()
+}
+
+function shuffleDeck() {
+    for(var j, x, i = deck.length; i; j = Math.floor(Math.random() * i), x = deck[i--], deck[i] = deck[j], deck[j] = x);  
 }
 
 
