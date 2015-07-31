@@ -1,119 +1,13 @@
 <!doctype html>
-    <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Heart of Diamonds Poker</title>
-            <link rel="stylesheet" type="text/css" href="bootstrap.css">
-            <script type="text/javascript" src="pixi.js"></script>
-        </head>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Heart of Diamonds Poker</title>
+        <link rel="stylesheet" type="text/css" href="bootstrap.css">
+    </head>
 
-        <body>
+    <body>
+    	<br>
+    	<a href="holdem.html">Poker</a>
+    </body>
 
-
-
-            <script>
-
-//---------------------------------------------------
-//Initialization
-//---------------------------------------------------
-
-var canvas;
-var context;
-var renderer;
-var stage; 
-
-
-var game = new Game(4, 400, 0, 0, 0);
-
-initPixi();
-initCards();
-
-
-//---------------------------------------------------
-//Constructors
-//---------------------------------------------------
-
-//Game Constructor
-
-function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterval, blindRaisePercentage) {
-    this.numberOfPlayers = numberOfPlayers;
-    this.roundNum = 0;
-    this.initialCash = initialCash;
-    this.initialSmallBlind = initialSmallBlind;
-    this.blindRaiseInterval = blindRaiseInterval;
-    this.blindRaisePercentage = blindRaisePercentage;
-    this.players;
-    this.deck = [];
-
-    this.createDeck = function() {
-        suits = ["D", "H", "C", "S"]
-
-        for (i = 1; i <= 4; i++) {
-            for (j = 1; j <= 13; j++) {
-                temp = new Card
-                temp.suit = suits[i]
-                temp.number = j;
-                this.deck.push(temp);
-            }
-        }
-    }
-
-    this.dealCard = function(player) {
-        i = Math.floor((Math.random() * 52) + 1) - 1
-
-        game.temp = deck[i]
-        deck.splice(i, 1)
-        player.currentHand.push(temp)
-    }
-
-    this.shuffleDeck = function() {
-        for(var j, x, i; i = deck.length; j = Math.floor(Math.random() * i), x = deck[i--], deck[i] = deck[j], deck[j] = x);  
-    }
-
-}
-
-//Card Constructor
-
-function Card (suit, number) {
-    this.suit = suit;
-    this.number = number;
-}
-
-//Player Constructor
-
-function Player (number, colour, name) {
-    this.number = number;
-    this.colour = colour;
-    this.name = name;
-    this.balance = 0;
-    this.rank = -1;
-    this.currentHand = [];
-}
-
-//---------------------------------------------------
-//Canvas & Pixi Methods
-//---------------------------------------------------
-
-function initCanvas() {
-    canvas = document.getElementById("texas_holdem_canvas");
-    context = canvas.getContext("2d");
-}
-
-function initPixi() {
-    renderer =  new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.view);
-    stage = new PIXI.Container();
-
-}
-
-//---------------------------------------------------
-//Rendering Methods
-//---------------------------------------------------
-
-
-
-
-            </script>
-
-        </body>
-    </html>

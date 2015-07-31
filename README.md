@@ -9,6 +9,8 @@ bwi
 #To-Do List
     - Start development of texas holdem html and javascript page
         - get a header done for html
+	    - create a front page with game options
+		- e.g., number of players, starting pot, blind options, etc.
         - re-learn how to code javascript and use it to create the poker game
             - design how the game will work
                 - will need several classes
