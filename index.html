@@ -21,10 +21,12 @@ var canvas;
 var context;
 var renderer;
 var stage; 
-var deck = [];
 
-initPixi()
-initCards()
+
+var game = new Game(4, 400, 0, 0, 0);
+
+initPixi();
+initCards();
 
 
 //---------------------------------------------------
@@ -33,14 +35,41 @@ initCards()
 
 //Game Constructor
 
-function Game (numberOfPlayers, roundNum, initialCash, initialSmallBlind, blindRaiseInterval, blindRaisePercetage, numberofDecks, players, decks) {
-    this.numberOfPlayers = numberofPlayers;
-    this.roundNum = roundNum;
+function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterval, blindRaisePercentage) {
+    this.numberOfPlayers = numberOfPlayers;
+    this.roundNum = 0;
     this.initialCash = initialCash;
     this.initialSmallBlind = initialSmallBlind;
     this.blindRaiseInterval = blindRaiseInterval;
     this.blindRaisePercentage = blindRaisePercentage;
-    this.players = players;
+    this.players;
+    this.deck = [];
+
+    this.createDeck = function() {
+        suits = ["D", "H", "C", "S"]
+
+        for (i = 1; i <= 4; i++) {
+            for (j = 1; j <= 13; j++) {
+                temp = new Card
+                temp.suit = suits[i]
+                temp.number = j;
+                this.deck.push(temp);
+            }
+        }
+    }
+
+    this.dealCard = function(player) {
+        i = Math.floor((Math.random() * 52) + 1) - 1
+
+        game.temp = deck[i]
+        deck.splice(i, 1)
+        player.currentHand.push(temp)
+    }
+
+    this.shuffleDeck = function() {
+        for(var j, x, i; i = deck.length; j = Math.floor(Math.random() * i), x = deck[i--], deck[i] = deck[j], deck[j] = x);  
+    }
+
 }
 
 //Card Constructor
@@ -58,7 +87,7 @@ function Player (number, colour, name) {
     this.name = name;
     this.balance = 0;
     this.rank = -1;
-    this.currentHand = []];
+    this.currentHand = [];
 }
 
 //---------------------------------------------------
@@ -81,40 +110,6 @@ function initPixi() {
 //Rendering Methods
 //---------------------------------------------------
 
-
-
-//---------------------------------------------------
-//Card Methods
-//---------------------------------------------------
-
-function initCards() {
-    suits = ["D", "H", "C", "S"]
-
-    for (i = 1, i <= 4, i++) {
-        for (j = 1, j <= 13, j++) {
-            temp = new Card
-            temp.suit = suits[i]
-            temp.number = j;
-            deck.push(temp);
-        }
-    }
-}
-
-function dealCard(player) {
-    i = Math.floor((Math.random() * 52) + 1) - 1
-
-    temp = deck[i]
-    deck.splice(i, 1)
-    player.currentHand.push(temp)
-}
-
-function refillDeck() {
-    initCards()
-}
-
-function shuffleDeck() {
-    for(var j, x, i; i = deck.length; j = Math.floor(Math.random() * i), x = deck[i--], deck[i] = deck[j], deck[j] = x);  
-}
 
 
 
