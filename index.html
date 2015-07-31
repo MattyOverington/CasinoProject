@@ -40,9 +40,7 @@ function Game (numberOfPlayers, roundNum, initialCash, initialSmallBlind, blindR
     this.initialSmallBlind = initialSmallBlind;
     this.blindRaiseInterval = blindRaiseInterval;
     this.blindRaisePercentage = blindRaisePercentage;
-    this.numberOfDecks = numberofDecks;
     this.players = players;
-    this.decks = decks;
 }
 
 //Card Constructor
@@ -102,8 +100,12 @@ function initCards() {
     }
 }
 
-function dealCard() {
-    
+function dealCard(player) {
+    i = Math.floor((Math.random() * 52) + 1) - 1
+
+    temp = deck[i]
+    deck.splice(i, 1)
+    player.currentHand.push(temp)
 }
 
 function refillDeck() {
@@ -111,7 +113,7 @@ function refillDeck() {
 }
 
 function shuffleDeck() {
-    for(var j, x, i = deck.length; i; j = Math.floor(Math.random() * i), x = deck[i--], deck[i] = deck[j], deck[j] = x);  
+    for(var j, x, i; i = deck.length; j = Math.floor(Math.random() * i), x = deck[i--], deck[i] = deck[j], deck[j] = x);  
 }
 
 
