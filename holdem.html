@@ -2,7 +2,7 @@
     <html>
         <head>
             <meta charset="UTF-8">
-            <title>Heart of Diamonds Poker</title>
+            <title>Texas Holdem'</title>
             <link rel="stylesheet" type="text/css" href="mystrap.css">
             <script type="text/javascript" src="pixi.js"></script>
         </head>
@@ -13,24 +13,35 @@
 
             <script>
 
-//---------------------------------------------------
-//Initialization
-//---------------------------------------------------
+//-----------------------------------------------------------------------------------------------------
+//Initialization & Global Variables
+//-----------------------------------------------------------------------------------------------------
 
 var canvas;
 var context;
+var card_img = new Image();
+card_img.src = "cards.gif";
+
+var card_height = 384 / 4;
+var card_width = 923 / 13;
 //var renderer;
 //var stage; 
 
+initCanvas();
+
 
 var game = new Game(4, 400, 0, 0, 0);
+game.createDeck();
+console.log(game.deck)
 
-initCanvas()
+renderCard(game.deck[13], 400, 400);
 
 
-//---------------------------------------------------
+
+
+//-----------------------------------------------------------------------------------------------------
 //Constructors
-//---------------------------------------------------
+//-----------------------------------------------------------------------------------------------------
 
 //Game Constructor
 
@@ -45,12 +56,12 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     this.deck = [];
 
     this.createDeck = function() {
-        suits = ["D", "H", "C", "S"]
+        suits = ["D", "H", "C", "S"];
 
-        for (i = 1; i <= 4; i++) {
+        for (i = 0; i < 4; i++) {
             for (j = 1; j <= 13; j++) {
-                temp = new Card
-                temp.suit = suits[i]
+                temp = new Card;
+                temp.suit = suits[i];
                 temp.number = j;
                 this.deck.push(temp);
             }
@@ -58,11 +69,11 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     }
 
     this.dealCard = function(player) {
-        i = Math.floor((Math.random() * 52) + 1) - 1
+        i = Math.floor((Math.random() * 52) + 1) - 1;
 
-        game.temp = deck[i]
-        deck.splice(i, 1)
-        player.currentHand.push(temp)
+        game.temp = deck[i];
+        deck.splice(i, 1);
+        player.currentHand.push(temp);
     }
 
     this.shuffleDeck = function() {
@@ -89,12 +100,14 @@ function Player (number, colour, name) {
     this.currentHand = [];
 }
 
-//---------------------------------------------------
+//-----------------------------------------------------------------------------------------------------
 //Canvas & Pixi Methods
-//---------------------------------------------------
+//-----------------------------------------------------------------------------------------------------
 
 function initCanvas() {
-    canvas = document.getElementById("texas_holdem_canvas");
+    canvas = document.getElementById("holdem_canvas");
+    canvas.height = window.innerHeight;     
+    canvas.width = window.innerWidth;
     context = canvas.getContext("2d");
 }
 
@@ -105,11 +118,27 @@ function initPixi() {
 
 }
 
-//---------------------------------------------------
+
+//-----------------------------------------------------------------------------------------------------
 //Rendering Methods
-//---------------------------------------------------
+//-----------------------------------------------------------------------------------------------------
 
+function renderCard(card, x, y) {
+    suits = ["D", "H", "C", "S"];
 
+    row = suits.indexOf(card.suit);
+    column = card.number - 1;
+
+    pixelsLeft = card_width * column;
+    pixelsTop = card_height * row;
+
+    console.log(pixelsLeft, pixelsTop);
+    console.log(card_width, card_height);
+
+    card_img.onload = function() {
+        context.drawImage(card_img, pixelsLeft, pixelsTop, card_width, card_height, x, y, card_width, card_height);
+    }
+}
 
 
             </script>
