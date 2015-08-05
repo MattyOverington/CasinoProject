@@ -3,13 +3,13 @@
         <head>
             <meta charset="UTF-8">
             <title>Heart of Diamonds Poker</title>
-            <link rel="stylesheet" type="text/css" href="bootstrap.css">
+            <link rel="stylesheet" type="text/css" href="mystrap.css">
             <script type="text/javascript" src="pixi.js"></script>
         </head>
 
         <body>
 
-
+        <canvas id="holdem_canvas"></canvas>
 
             <script>
 
@@ -19,13 +19,13 @@
 
 var canvas;
 var context;
-var renderer;
-var stage; 
+//var renderer;
+//var stage; 
 
 
 var game = new Game(4, 400, 0, 0, 0);
 
-initPixi()
+initCanvas()
 
 
 //---------------------------------------------------

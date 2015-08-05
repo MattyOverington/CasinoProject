@@ -1,0 +1,80 @@
+
+/* ------------------------------------------------------------------------------ */
+/* ID References */
+/* ------------------------------------------------------------------------------ */
+
+
+#index_header {
+	height:6%;
+	width:98%;
+	background-color:#FFFFFF;
+	font-family:"Century";
+	padding:0.5%;
+	padding-left:1%;
+	padding-right:1%;
+}
+
+#index_holdem_panel {
+	position:absolute;
+	top:30%;
+	left:10%;
+}
+
+#holdem_canvas {
+	width:100%;
+	height:100%;
+	background-color:#000000;
+	position:absolute;
+	margin:0%;
+	top:0%;
+	left:0%;
+}
+
+/* ------------------------------------------------------------------------------ */
+/* Default Element References */
+/* ------------------------------------------------------------------------------ */
+
+body {
+	background-color:#009933;
+}
+
+/* ------------------------------------------------------------------------------ */
+/* Class References */
+/* ------------------------------------------------------------------------------ */
+
+.game_panel {
+	width:20%;
+	height:40%;
+	background-color:#FFFFFF;
+	font-family:"Century";
+	padding:2%;
+}
+
+.game_panel_link {
+	display: block;
+	text-decoration: none;
+	color:inherit;
+}
+
+.image_internal_panel {
+	height:70%;
+	width:100%;
+	margin-bottom:0;
+}
+
+.image_internal {
+	display: block;
+	height:100%;
+	width:100%;
+}
+
+.text_internal_panel {
+	font-family: inherit;
+	background-color: inherit;
+	height:30%;
+	width:100%;
+	text-align: justify;
+	position:relative;
+	top:5%;
+}
+
