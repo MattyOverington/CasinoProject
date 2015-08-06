@@ -17,6 +17,7 @@
 //Initialization & Global Variables
 //-----------------------------------------------------------------------------------------------------
 
+
 var canvas;
 var context;
 var card_img = new Image();
@@ -27,14 +28,17 @@ var card_width = 923 / 13;
 //var renderer;
 //var stage; 
 
-initCanvas();
-
-
-var game = new Game(4, 400, 0, 0, 0);
+var game = new Game(4, 400, 5, 5, 0.5);
 game.createDeck();
-console.log(game.deck)
+game.shuffleDeck();
+game.initPlayers(); 
 
-renderCard(game.deck[13], 400, 400);
+initCanvas();
+renderPlayerIcons();
+
+card_img.onload = function() {
+    renderFrame();
+}
 
 
 
@@ -46,14 +50,25 @@ renderCard(game.deck[13], 400, 400);
 //Game Constructor
 
 function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterval, blindRaisePercentage) {
-    this.numberOfPlayers = numberOfPlayers;
+    if (numberOfPlayers <= 7) {
+        this.numberOfPlayers = numberOfPlayers;
+    } else {
+        this.numberOfPlayers = 7;
+    }
     this.roundNum = 0;
-    this.initialCash = initialCash;
+    if (initialCash > 0) {
+        this.initialCash = initialCash;
+    } else {
+        this.initialCash = 4000;
+    }
     this.initialSmallBlind = initialSmallBlind;
     this.blindRaiseInterval = blindRaiseInterval;
     this.blindRaisePercentage = blindRaisePercentage;
-    this.players;
+    this.players = [];
     this.deck = [];
+    this.community_cards = [];
+    this.pot = [];
+    this.player_actions = [];
 
     this.createDeck = function() {
         suits = ["D", "H", "C", "S"];
@@ -69,7 +84,7 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     }
 
     this.dealCard = function(player) {
-        i = Math.floor((Math.random() * 52) + 1) - 1;
+        i = this.deck[0];
 
         game.temp = deck[i];
         deck.splice(i, 1);
@@ -77,7 +92,43 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     }
 
     this.shuffleDeck = function() {
-        for(var j, x, i; i = deck.length; j = Math.floor(Math.random() * i), x = deck[i--], deck[i] = deck[j], deck[j] = x);  
+
+        temp = []
+        len = this.deck.length;
+
+        for (i = 0; i < 52; i++) {
+            j = Math.floor(Math.random() * (52 - i))
+            temp.push(this.deck[j])
+            this.deck.splice(j, 1);
+        }
+
+        this.deck = temp;
+    }
+
+
+    this.initPlayers = function() {
+        colours = ["red", "blue", "white", "orange", "purple", "yellow", "white"];
+        for (i = 0; i <= this.numberOfPlayers; i++) {
+            temp = new Player (i, colours[i], "Jimmy", (this.initialCash/this.numberOfPlayers), true);
+            if (i == 0) {
+                temp.isAI = false;
+                temp.name = 'Fezza';
+            }
+            this.players.push(temp); 
+        }
+    }
+
+    this.startRound = function() {
+        for (var i in this.players) {
+            i.currentHand = []
+        }
+
+        for (var i in this.players) {
+            this.dealCard(i)
+        }
+        for (var i in this.players) {
+            this.dealCard(i)
+        }
     }
 
 }
@@ -91,13 +142,13 @@ function Card (suit, number) {
 
 //Player Constructor
 
-function Player (number, colour, name) {
+function Player (number, colour, name, balance, isAI) {
     this.number = number;
     this.colour = colour;
     this.name = name;
-    this.balance = 0;
-    this.rank = -1;
+    this.rank = 0;
     this.currentHand = [];
+    this.isAI = isAI;
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -123,6 +174,23 @@ function initPixi() {
 //Rendering Methods
 //-----------------------------------------------------------------------------------------------------
 
+
+function renderPlayerIcons() {
+    for (var i in game.players) {
+        console.log(i);
+        context.beginPath();
+        context.arc(600 + 10*i.number, 25 , 10, 0, 2 * Math.PI, false);
+        context.fillStyle = i.colour;
+        context.lineWidth = 2;
+        context.fill();
+    }
+}
+
+function renderFrame() {
+    renderCard(game.deck[0], 490, 450);
+    renderCard(game.deck[1], 530, 450);
+}
+
 function renderCard(card, x, y) {
     suits = ["D", "H", "C", "S"];
 
@@ -132,12 +200,12 @@ function renderCard(card, x, y) {
     pixelsLeft = card_width * column;
     pixelsTop = card_height * row;
 
-    console.log(pixelsLeft, pixelsTop);
-    console.log(card_width, card_height);
+    
+    context.drawImage(card_img, pixelsLeft, pixelsTop, card_width, card_height, x, y, card_width, card_height);
+}
 
-    card_img.onload = function() {
-        context.drawImage(card_img, pixelsLeft, pixelsTop, card_width, card_height, x, y, card_width, card_height);
-    }
+function clearFloor() {
+    context.clearRect(0, 0, window.innerWidth, window.innerHeight);
 }
 
 
