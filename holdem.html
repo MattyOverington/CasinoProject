@@ -130,7 +130,6 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
 
     this.initPlayers = function() {
         colours = ["red", "blue", "green", "yellow", "cyan", "maroon", "white"];
-        console.log(this.initialCash)
         for (i = 0; i <  this.numberOfPlayers; i++) {
             temp = new Player (i, colours[i], "Jeff", Math.floor(this.initialCash/this.numberOfPlayers), true);
             if (i == 0) {
@@ -162,7 +161,6 @@ function Round(number, players, smallBlind) {
         this.community_cards.push(game.dealCard())
         this.community_cards.push(game.dealCard())
         this.community_cards.push(game.dealCard())
-        console.log(this.community_cards);
         renderCards();
     }
 }
@@ -222,26 +220,51 @@ function initPixi() {
 
 }
 
+function percentageToAbsolute(value, isX) {
+    if (isX == true) {
+        return value * window.innerWidth
+    } else {
+        return value * window.innerHeight
+    }
+}
+
 //-----------------------------------------------------------------------------------------------------
 //Control and Interaction Methods
 //-----------------------------------------------------------------------------------------------------
 
 function initButtons() {
-    var buttony = 485
-    var buttony2 = buttony + 30
-    var buttonHeight = 18;
+
+    firstrowpercentage = 0.757
+    secondrowpercentage = 0.801
 
 
+    buttony = percentageToAbsolute(firstrowpercentage, false)
+    buttony2 = percentageToAbsolute(secondrowpercentage, false)
+    buttonHeight = 18;
 
-    foldButton = new Button('fold', 490 + 135, buttony, 40, buttonHeight, "Fold");
-    checkButton = new Button('check', 541 + 135, buttony, 50, buttonHeight, "Check");
-    callButton = new Button('call', 602 + 135, buttony, 40, buttonHeight, "Call");
-    add5button = new Button('5', 490 + 135, buttony2, 30, buttonHeight, "$5");
-    add10button = new Button('10', 530 + 135, buttony2, 30, buttonHeight, "$10");
-    add50button = new Button('50', 570 + 135, buttony2, 30, buttonHeight, "$50");
-    add100button = new Button('100', 610 + 135, buttony2, 40, buttonHeight, "$100");
-    allInButton = new Button('all in', 655 + 135, buttony, 50, buttonHeight, "All In");
-    betButton = new Button('bet', 660 + 135, buttony2, 45, buttonHeight, "Raise");
+    x1 = percentageToAbsolute(0.459, true)
+    x2 = percentageToAbsolute(0.497, true)
+    x3 = percentageToAbsolute(0.542, true)
+    x4 = percentageToAbsolute(0.588, true)
+
+    x5 = percentageToAbsolute(0.459, true)
+    x6 = percentageToAbsolute(0.489, true)
+    x7 = percentageToAbsolute(0.518, true)
+    x8 = percentageToAbsolute(0.548, true)
+    x9 = percentageToAbsolute(0.584, true)
+
+
+    foldButton = new Button('fold', x1, buttony, 40, buttonHeight, "Fold");
+    checkButton = new Button('check', x2, buttony, 50, buttonHeight, "Check");
+    callButton = new Button('call', x3, buttony, 40, buttonHeight, "Call");
+    allInButton = new Button('all in', x4, buttony, 50, buttonHeight, "All In");
+
+    add5button = new Button('5', x5, buttony2, 30, buttonHeight, "$5");
+    add10button = new Button('10', x6, buttony2, 30, buttonHeight, "$10");
+    add50button = new Button('50', x7, buttony2, 30, buttonHeight, "$50");
+    add100button = new Button('100', x8, buttony2, 40, buttonHeight, "$100");
+    betButton = new Button('bet', x9, buttony2, 45, buttonHeight, "Raise");
+
     buttons.push(foldButton);
     buttons.push(checkButton);
     buttons.push(callButton);
@@ -305,10 +328,17 @@ function renderButtons() {
     }
 }
 function renderStats() {
-    player = game.players[0];
+    player = game.players[0]
+
+    xpercentage = 0.463
+    ypercentage = 0.694
+
+    x = percentageToAbsolute(xpercentage, true);
+    y = percentageToAbsolute(ypercentage, false);
+
     context.font = 'Bold 64px Century'
     context.fillStyle = 'black'
-    context.fillText("$" + player.balance, 630, 445);
+    context.fillText("$" + player.balance, x, y);
 }
 
 function renderCards() {
@@ -321,8 +351,13 @@ function renderCards() {
 function renderStartingHand() {
     player = game.players[0]
     cards = player.currentHand
-    startx = 515;
-    y = 375;
+
+    startxpercentage = 0.378;
+    ypercentage = 0.588
+
+    startx = percentageToAbsolute(startxpercentage, true);
+    y = percentageToAbsolute(ypercentage, false)
+
     for (i = 0; i < 2; i ++) {
         renderCard(cards[i], startx + (i * 40), y);
     }
@@ -330,8 +365,15 @@ function renderStartingHand() {
 
 function renderCommunityCards() {
     cards = game.round.community_cards
-    y = 230;
-    startx = 485;
+    ypercentage = 0.375;
+    startxpercentage = 0.3566;
+    offsetPercentage = 0.05882;
+    
+    startx = percentageToAbsolute(startxpercentage, true);
+    offset = percentageToAbsolute(offsetPercentage, true);
+    y = percentageToAbsolute(ypercentage, false);
+
+    console.log(startx, offset, y)
 
     for (i = 0; i < cards.length; i++) {
         renderCard(cards[i], startx + (i * 80), y);
