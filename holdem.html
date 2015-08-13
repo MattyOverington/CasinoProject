@@ -33,7 +33,8 @@ var card_width = 923 / 13;
 var buttons = []
 initButtons();
 
-//window.addEventListener('mousedown', interperateClick());
+window.addEventListener('mousedown', interperateClick);
+window.addEventListener('mousemove', interperateMove);
 
 
 //Game Initialization
@@ -42,19 +43,17 @@ game.createDeck();
 game.shuffleDeck();
 game.initPlayers(); 
 
-
-game.giveCard(0);
-game.giveCard(0);
-
+game.giveCard(0)
+game.giveCard(0)
 
 
 //Canvas Initialization & Initial Render
 initCanvas();
-renderPlayerIcons();
-renderButtons();
-renderStats();
+initialCardRender();
+renderScene();
 
-game.round.dealFlop(game);
+
+game.dealFlop();
 
 
 //-----------------------------------------------------------------------------------------------------
@@ -69,7 +68,6 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     } else {
         this.numberOfPlayers = 7;
     }
-    this.roundNum = 0;
     if (initialCash > 0) {
         this.initialCash = initialCash;
     } else {
@@ -83,7 +81,53 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     this.players = [];
     this.deck = [];
 
-    this.round = new Round(0, this.players, this.smallBlind);
+    this.roundNum = 0;
+
+    this.community_cards = [];
+    this.pot = 0;
+    this.player_actions = [];
+    this.highBet = 0;
+
+    this.bigBlind = this.smallBlind * 2;
+    this.minimumBet = this.smallBlind;
+
+    this.beginRound = function() {
+        this.community_cards = [];
+        this.pot = 0;
+        this.player_actions = [];
+        this.highBet = 0;
+
+        this.bigBlind = this.smallBlind * 2;
+        this.minimumBet = this.smallBlind;
+
+        len = this.players.length
+
+        for (i = 0; i < len; i++) {
+            player.currentHand = []
+        }
+
+        for (i = 0; i < len; i++) {this.giveCard(i)}
+        for (i = 0; i < len; i++) {this.giveCard(i)}
+
+    }
+
+    this.bettingCycle = function() {
+        for (i = 0; i < this.players.length; i++) {
+            player = this.players[i];
+            if (i == 0) {
+                
+            } else {
+
+            }
+        }
+    }
+
+    this.dealFlop = function() {
+        this.community_cards.push(this.dealCard())
+        this.community_cards.push(this.dealCard())
+        this.community_cards.push(this.dealCard())
+        renderScene();
+    }
     
 
     this.createDeck = function() {
@@ -142,28 +186,6 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
 
 }
 
-//Round Constructor
-
-function Round(number, players, smallBlind) {
-    this.number = number;
-    this.players = players;
-    this.smallBlind = smallBlind;
-    this.bigBlind = smallBlind * 2;
-    this.minimumBet = smallBlind * 2;
-
-    this.community_cards = [];
-    this.pot = [];
-    this.player_actions = [];
-    this.roundPlayers = [];
-    this.highBet = 0;
-
-    this.dealFlop = function(game) {
-        this.community_cards.push(game.dealCard())
-        this.community_cards.push(game.dealCard())
-        this.community_cards.push(game.dealCard())
-        renderCards();
-    }
-}
 
 //Card Constructor
 
@@ -188,18 +210,15 @@ function Player (number, colour, name, balance, isAI) {
     this.hasHighBet = false;
 }
 
-function Button (name, x, y, width, height, displayText) {
+function Button (name, x, y, width, height, displayText, func) {
     this.name = name;
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
     this.displayText = displayText;
-    this.function;
-
-    this.checkClick = function(mx, my) {
-
-    }
+    this.func = func;
+    this.isHover = false;
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -232,6 +251,32 @@ function percentageToAbsolute(value, isX) {
 //Control and Interaction Methods
 //-----------------------------------------------------------------------------------------------------
 
+function interperateClick(event) {
+    mousex = event.pageX - canvas.offsetLeft;
+    mousey = event.pageY - canvas.offsetLeft;
+}
+
+function interperateMove(event) {
+    mousex = event.pageX - canvas.offsetLeft;
+    mousey = event.pageY - canvas.offsetLeft;
+
+    for (i = 0; i < buttons.length; i++) {
+        button = buttons[i];
+        if (mousex >= button.x && mousey >= button.y) {
+            if (mousex <= (button.x + button.width) && mousey <= (button.y + button.height)) {
+                button.isHover = true
+                console.log("Detected hover")
+            } else {
+                button.isHover = false
+            }
+        } else {
+            button.isHover = false
+        }
+    }
+
+    renderScene()
+}
+
 function initButtons() {
 
     firstrowpercentage = 0.757
@@ -242,10 +287,12 @@ function initButtons() {
     buttony2 = percentageToAbsolute(secondrowpercentage, false)
     buttonHeight = 18;
 
+    //Set Various X and Y Percentages
+
     x1 = percentageToAbsolute(0.459, true)
     x2 = percentageToAbsolute(0.497, true)
     x3 = percentageToAbsolute(0.542, true)
-    x4 = percentageToAbsolute(0.588, true)
+    x4 = percentageToAbsolute(0.580, true)
 
     x5 = percentageToAbsolute(0.459, true)
     x6 = percentageToAbsolute(0.489, true)
@@ -253,17 +300,67 @@ function initButtons() {
     x8 = percentageToAbsolute(0.548, true)
     x9 = percentageToAbsolute(0.584, true)
 
+    //Assign Buttons and Functions for Row 1
 
-    foldButton = new Button('fold', x1, buttony, 40, buttonHeight, "Fold");
-    checkButton = new Button('check', x2, buttony, 50, buttonHeight, "Check");
-    callButton = new Button('call', x3, buttony, 40, buttonHeight, "Call");
-    allInButton = new Button('all in', x4, buttony, 50, buttonHeight, "All In");
+    foldButton = new Button('fold', x1, buttony, 40, buttonHeight, "Fold", fold);
 
-    add5button = new Button('5', x5, buttony2, 30, buttonHeight, "$5");
-    add10button = new Button('10', x6, buttony2, 30, buttonHeight, "$10");
-    add50button = new Button('50', x7, buttony2, 30, buttonHeight, "$50");
-    add100button = new Button('100', x8, buttony2, 40, buttonHeight, "$100");
-    betButton = new Button('bet', x9, buttony2, 45, buttonHeight, "Raise");
+    function fold() {
+
+    }
+
+    checkButton = new Button('check', x2, buttony, 50, buttonHeight, "Check", check);
+
+    function check() {
+
+    }
+
+    callButton = new Button('call', x3, buttony, 40, buttonHeight, "Call", call);
+
+    function call() {
+
+    }
+
+    allInButton = new Button('all in', x4, buttony, 50, buttonHeight, "All In", allIn);
+
+    function allIn() {
+
+    }
+
+    //Assign buttons and functions for Row 2
+
+    add5button = new Button('raise 5', x5, buttony2, 30, buttonHeight, "$5", raise5);
+
+    function raise5() {
+        raise(5)
+    }
+
+    add10button = new Button('raise 10', x6, buttony2, 30, buttonHeight, "$10", raise10);
+
+    function raise10() {
+        raise(10)
+    }
+
+    add50button = new Button('raise 50', x7, buttony2, 30, buttonHeight, "$50", raise50);
+
+    function raise50() {
+        raise(50)
+    }
+
+    add100button = new Button('raise 100', x8, buttony2, 40, buttonHeight, "$100", raise100);
+
+    function raise100() {
+        raise(100)
+    }
+
+    betButton = new Button('bet', x9, buttony2, 45, buttonHeight, "Raise", bet);
+
+    function bet() {
+
+    }
+
+    function raise(amount) {
+
+    }
 
     buttons.push(foldButton);
     buttons.push(checkButton);
@@ -281,6 +378,14 @@ function initButtons() {
 //Rendering Methods
 //-----------------------------------------------------------------------------------------------------
 
+
+function renderScene() {
+    clearFloor();
+    renderPlayerIcons();
+    renderButtons();
+    renderStats();  
+    renderCards();
+}
 
 function renderPlayerIcons() {
     for (i = 0; i < game.numberOfPlayers; i++) {
@@ -316,7 +421,11 @@ function renderButtons() {
         button = buttons[i];
         context.beginPath();
         context.rect(button.x, button.y, button.width, button.height);
-        context.strokeStyle = 'black';
+        if (button.isHover == true) {
+            context.strokeStyle = 'orange';
+        } else {
+            context.strokeStyle = 'black';
+        }
         context.fillStyle = 'maroon'
         context.lineWidth = 5
         context.stroke()
@@ -342,10 +451,15 @@ function renderStats() {
 }
 
 function renderCards() {
-    card_img.onload = function() {
+    renderStartingHand();
+    renderCommunityCards();
+}
+
+function initialCardRender() {
+       card_img.onload = function() {
         renderStartingHand();
         renderCommunityCards();
-    }
+    } 
 }
 
 function renderStartingHand() {
@@ -364,7 +478,7 @@ function renderStartingHand() {
 }
 
 function renderCommunityCards() {
-    cards = game.round.community_cards
+    cards = game.community_cards
     ypercentage = 0.375;
     startxpercentage = 0.3566;
     offsetPercentage = 0.05882;
