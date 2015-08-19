@@ -18,16 +18,23 @@
 //-----------------------------------------------------------------------------------------------------
 
 
-//Variable Initializtion and Stuffs
-var canvas;
-var context;
-var card_img = new Image();
-card_img.src = "cards.gif";
-
+//Global Variable Initializtion and Stuffs
 var card_height = 384 / 4;
 var card_width = 923 / 13;
-//var renderer;
-//var stage; 
+
+var action_fold = "fold"
+var action_call = "call"
+var action_check = "check"
+var action_bet = "bet"
+var action_allIn = "all_in"
+
+var user_action;
+var player_raise_amount = 0;
+
+var roundCounter = 0;
+var currentPlayerName = null;
+var potCounter = 0
+var recentActions = [];
 
 //Buttons Initialization
 var buttons = []
@@ -48,13 +55,32 @@ game.giveCard(0)
 
 
 //Canvas Initialization & Initial Render
+var canvas;
+var context;
+var card_img = new Image();
+card_img.src = "cards.gif";
+
 initCanvas();
 initialCardRender();
-renderScene();
+clearFloor();
 
 
-game.dealFlop();
+slow_interval = setInterval(function() {
+    game.determineHighBet();
+    roundCounter = game.roundNum;
+    potCounter = game.pot;
+    recentActions = game.player_actions;
+}, 500);
 
+fast_interval = setInterval(function() {
+    game.buttonAvailability();
+    renderScene();
+}, 100)
+
+//Starting the Game
+setTimeout(function() {
+    game.beginRound()
+}, 2000);
 
 //-----------------------------------------------------------------------------------------------------
 //Constructors
@@ -85,41 +111,172 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
 
     this.community_cards = [];
     this.pot = 0;
-    this.player_actions = [];
     this.highBet = 0;
+
+    this.player_actions = [];
+    this.player_bets = [];
+    this.player_order = [];
+    this.player_order_copy = [];
+
+    for (i = 0; i < numberOfPlayers; i++) {
+        this.player_order.push(i);
+    }
+
 
     this.bigBlind = this.smallBlind * 2;
     this.minimumBet = this.smallBlind;
 
     this.beginRound = function() {
+        this.roundNum += 1
         this.community_cards = [];
         this.pot = 0;
-        this.player_actions = [];
-        this.highBet = 0;
-
+        this.player_actions = ["Round " + this.roundNum + " Started"];
+        this.player_bets = [];
         this.bigBlind = this.smallBlind * 2;
         this.minimumBet = this.smallBlind;
+        temp = this.player_order.slice()
+
+        for (i = 0; i < temp.length; i++) {
+            if (i == 0) {
+                this.player_order[0] = this.player_order[this.player_order.length - 1]
+            } else {
+                this.player_order[i] = temp[i - 1]
+            }
+        }
+
+        
+        this.player_order_copy = this.player_order.slice()
 
         len = this.players.length
 
         for (i = 0; i < len; i++) {
+            player = this.players[i]
             player.currentHand = []
+            this.player_bets.push(0)
         }
 
         for (i = 0; i < len; i++) {this.giveCard(i)}
         for (i = 0; i < len; i++) {this.giveCard(i)}
 
+        blind_player_index = this.player_order[this.player_order.length - 1]
+        sblind_player_index = this.player_order[this.player_order.length - 2]
+
+        blind_player = this.players[blind_player_index]
+        sblind_player = this.players[sblind_player_index]
+
+        
+
+        this.bet(blind_player, this.bigBlind)
+        this.bet(sblind_player, this.smallBlind)
+
+        this.player_actions.push(sblind_player.name + " posted small blind of $" + this.smallBlind)
+        this.player_actions.push(blind_player.name + " posted big blind of $" + this.bigBlind)
+
+        renderScene()
+
+
+
+        this.bettingRound()
+        //this.dealFlop()
+        //this.bettingCycle()
+        //this.dealTurn()
+        //this.bettingCycle()
+        //this.dealRiver()
+        //this.finalBettingCycle()
     }
 
-    this.bettingCycle = function() {
-        for (i = 0; i < this.players.length; i++) {
-            player = this.players[i];
-            if (i == 0) {
-                
-            } else {
+    this.bettingRound = function() {
+        this.startBettingRound(0)
+    }
 
-            }
+    this.startBettingRound = function(i) {
+        index = this.player_order_copy[i]
+        player = this.players[index];
+
+        action = null
+
+        console.log("In normal loop with player " + player.name + ", i = " + i + ", index = " + index)
+
+        player.hasCurrentTurn = true
+        currentPlayerName = player.name
+
+        if (player.isAI == false) {
+            return null
+        } else {
+            self = this
+            action = action_check
+            temp_player = player
+            ind = index
+            setTimeout(function() {
+                self.bettingAction(i, ind, temp_player, action)
+                self.players[ind].hasCurrentTurn = false;
+                if (i < self.players.length && action == action_fold ) {
+                    self.startBettingRound(i)
+                    console.log("Successfully registered fold")
+                } else if (i + 1 < self.players.length){
+                    self.startBettingRound(i + 1)
+                }
+            }, 1000)
         }
+    }
+
+    this.continueBettingRound = function(action) {
+        user = this.players[0]
+        i = this.player_order_copy.indexOf(0)
+
+        self = this
+        temp_player = user
+
+        ind = i
+
+        setTimeout(function() {
+            console.log("Entered Timeout")
+            self.bettingAction(ind, 0, temp_player, action)
+            self.players[0].hasCurrentTurn = false;
+
+            console.log("Going Back to Normal Loop with ind of " + ind)
+            if (ind < self.players.length && action == action_fold ) {
+                console.log("Successfully registered fold")
+                self.startBettingRound(ind)
+            } else if (ind + 1 < self.players.length){
+                self.startBettingRound(ind + 1)
+            }
+        }, 1000)
+    }
+
+    this.bettingAction = function(i, index, player, action) {
+        console.log("Processing  bettingAction")
+        if (action == action_fold) {
+            num = maxOfArray(this.player_order_copy)
+            temp = this.player_order_copy.indexOf(num)
+            this.player_order_copy.splice(temp, 1)
+            this.player_actions.push(player.name + " Folded")
+            console.log(this.player_order_copy, this.players)
+        } else if (action == action_call) {
+            amount = this.highBet - this.player_bets[i]
+            this.bet(player, amount)
+            this.player_actions.push(player.name + " Called $" + amount)
+        } else if (action == action_check) {
+            this.player_actions.push(player.name + " Checked")
+        } else if (action == action_bet) {
+            raise = (this.player_bets[i] + player_raise_amount) - this.highBet
+            this.bet(i, player_raise_amount)
+            if (raise > 0) {
+                this.player_actions.push(player.name + "Raised $" + raise)
+            } else {
+                this.player_actions.push(player.name + " Called $" + raise)
+            }
+        } else if (action == action_allIn) {
+            this.bet(i, player.balance)
+            all_ins += 1;
+            this.player_actions.push(player.name + "    Went All In With $" + player.balance)
+        }
+    }
+
+    this.bet = function(player, amount) {
+        this.pot += amount;
+        player.balance -= amount;
+        this.player_bets[this.players.indexOf(player)] += amount
     }
 
     this.dealFlop = function() {
@@ -127,6 +284,16 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
         this.community_cards.push(this.dealCard())
         this.community_cards.push(this.dealCard())
         renderScene();
+    }
+
+    this.dealTurn = function() {
+        this.community_cards.push(this.dealCard())
+        renderScene()
+    }
+
+    this.dealRiver = function() {
+        this.community_cards.push(this.dealCard())
+        renderScene()
     }
     
 
@@ -174,8 +341,9 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
 
     this.initPlayers = function() {
         colours = ["red", "blue", "green", "yellow", "cyan", "maroon", "white"];
+        names = ["Jeff", "Milo", "Duffy", "Goro", "Wezza", "Alex", "Jeff"]
         for (i = 0; i <  this.numberOfPlayers; i++) {
-            temp = new Player (i, colours[i], "Jeff", Math.floor(this.initialCash/this.numberOfPlayers), true);
+            temp = new Player (i, colours[i], names[i], Math.floor(this.initialCash/this.numberOfPlayers), true);
             if (i == 0) {
                 temp.isAI = false;
                 temp.name = 'Fezza';
@@ -183,9 +351,64 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
             this.players.push(temp); 
         }
     }
+    this.determineHighBet = function() {
+        this.highBet = maxOfArray(this.player_bets)
+        index = this.player_bets.indexOf(this.highBet)
+        for (i = 0; i < this.numberOfPlayers;i++) {
+            if (index == i) {
+                this.players[index].hasHighBet = true
+            } else {
+                this.players[i].hasHighBet = false
+            }
+        }   
+    }
+
+    this.buttonAvailability = function() {
+        foldButton = buttons[0]
+        checkButton = buttons[1]
+        callButton = buttons[2]
+        add5button = buttons[3]
+        add10button = buttons[4]
+        add50button = buttons[5]
+        add100button = buttons[6]
+        allInButton = buttons[7]
+        betButton = buttons[8]
+
+        user_bet = this.player_bets[0]
+        user = this.players[0]
+
+        for (i = 0; i < buttons.length; i++) {
+            button = buttons[i]
+            if (user.hasCurrentTurn == true) {
+                button.enabled = true
+            } else {
+                button.enabled = false
+            }
+        }
+
+        user_balance = user.balance
+
+        if (player_raise_amount + 5 > user_balance) {
+            add5button.enabled = false
+        } if (player_raise_amount + 10 > user_balance) {
+            add10button.enabled = false
+        } if (player_raise_amount + 50 > user_balance) {
+            add50button.enabled = false
+        } if (player_raise_amount + 100 > user_balance) {
+            add100button.enabled = false
+        } 
+
+        if (this.player_bets[0] < this.highBet) {
+            checkButton.enabled = false
+            if (player_raise_amount + this.player_bets[0] < this.highBet) {
+                betButton.enabled = false
+            }
+        } else if (this.player_bets[0] = this.highBet) {
+            callButton.enabled = false;
+        }
+    }
 
 }
-
 
 //Card Constructor
 
@@ -206,23 +429,23 @@ function Player (number, colour, name, balance, isAI) {
 
     this.currentHand = [];
     this.hasCurrentTurn = false;
-    this.blindStatus = null;
     this.hasHighBet = false;
 }
 
-function Button (name, x, y, width, height, displayText, func) {
+function Button (name, x, y, width, height, displayText, action) {
     this.name = name;
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
     this.displayText = displayText;
-    this.func = func;
+    this.action = action;
+    this.enabled = false;
     this.isHover = false;
 }
 
 //-----------------------------------------------------------------------------------------------------
-//Canvas & Pixi Methods
+//Canvas & Miscellaneous Methods
 //-----------------------------------------------------------------------------------------------------
 
 function initCanvas() {
@@ -230,13 +453,6 @@ function initCanvas() {
     canvas.height = window.innerHeight;     
     canvas.width = window.innerWidth;
     context = canvas.getContext("2d");
-}
-
-function initPixi() {
-    renderer =  new PIXI.CanvasRenderer(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.view);
-    stage = new PIXI.Container();
-
 }
 
 function percentageToAbsolute(value, isX) {
@@ -247,6 +463,21 @@ function percentageToAbsolute(value, isX) {
     }
 }
 
+function equalValues(array) {
+
+    for (var i = 1; i < array.length; i++) {
+        if (array[i] !== array[0]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function maxOfArray(array) {
+    return Math.max.apply(null, array);
+}
+
 //-----------------------------------------------------------------------------------------------------
 //Control and Interaction Methods
 //-----------------------------------------------------------------------------------------------------
@@ -254,7 +485,26 @@ function percentageToAbsolute(value, isX) {
 function interperateClick(event) {
     mousex = event.pageX - canvas.offsetLeft;
     mousey = event.pageY - canvas.offsetLeft;
+
+    //console.log(mousex/window.innerWidth, 1 - mousey/window.innerWidth)
+
+    for (i = 0; i < buttons.length; i++) {
+        button = buttons[i];
+        if (mousex >= button.x && mousey >= button.y) {
+            if (mousex <= (button.x + button.width) && mousey <= (button.y + button.height) && button.enabled == true) {
+                if (i == 3 || i == 4 || i == 5 || i == 6 ) {
+                    player_raise_amount += button.action
+                } else if (i == 0 || i == 1 || i == 2 || i == 7 || i == 8) {
+                    console.log("Got click")
+                    game.continueBettingRound(button.action)
+                }
+            }
+        }
+    }
+
+    renderScene()
 }
+
 
 function interperateMove(event) {
     mousex = event.pageX - canvas.offsetLeft;
@@ -263,9 +513,8 @@ function interperateMove(event) {
     for (i = 0; i < buttons.length; i++) {
         button = buttons[i];
         if (mousex >= button.x && mousey >= button.y) {
-            if (mousex <= (button.x + button.width) && mousey <= (button.y + button.height)) {
+            if (mousex <= (button.x + button.width) && mousey <= (button.y + button.height) && button.enabled == true) {
                 button.isHover = true
-                console.log("Detected hover")
             } else {
                 button.isHover = false
             }
@@ -302,65 +551,25 @@ function initButtons() {
 
     //Assign Buttons and Functions for Row 1
 
-    foldButton = new Button('fold', x1, buttony, 40, buttonHeight, "Fold", fold);
+    foldButton = new Button('fold', x1, buttony, 40, buttonHeight, "Fold", action_fold);
 
-    function fold() {
+    checkButton = new Button('check', x2, buttony, 50, buttonHeight, "Check", action_check);
 
-    }
+    callButton = new Button('call', x3, buttony, 40, buttonHeight, "Call", action_call);
 
-    checkButton = new Button('check', x2, buttony, 50, buttonHeight, "Check", check);
-
-    function check() {
-
-    }
-
-    callButton = new Button('call', x3, buttony, 40, buttonHeight, "Call", call);
-
-    function call() {
-
-    }
-
-    allInButton = new Button('all in', x4, buttony, 50, buttonHeight, "All In", allIn);
-
-    function allIn() {
-
-    }
+    allInButton = new Button('all in', x4, buttony, 50, buttonHeight, "All In", action_allIn);
 
     //Assign buttons and functions for Row 2
 
-    add5button = new Button('raise 5', x5, buttony2, 30, buttonHeight, "$5", raise5);
+    add5button = new Button('raise 5', x5, buttony2, 30, buttonHeight, "$5", 5);
 
-    function raise5() {
-        raise(5)
-    }
+    add10button = new Button('raise 10', x6, buttony2, 30, buttonHeight, "$10", 10);
 
-    add10button = new Button('raise 10', x6, buttony2, 30, buttonHeight, "$10", raise10);
+    add50button = new Button('raise 50', x7, buttony2, 30, buttonHeight, "$50", 50);
 
-    function raise10() {
-        raise(10)
-    }
+    add100button = new Button('raise 100', x8, buttony2, 40, buttonHeight, "$100", 100);
 
-    add50button = new Button('raise 50', x7, buttony2, 30, buttonHeight, "$50", raise50);
-
-    function raise50() {
-        raise(50)
-    }
-
-    add100button = new Button('raise 100', x8, buttony2, 40, buttonHeight, "$100", raise100);
-
-    function raise100() {
-        raise(100)
-    }
-
-    betButton = new Button('bet', x9, buttony2, 45, buttonHeight, "Raise", bet);
-
-    function bet() {
-
-    }
-
-    function raise(amount) {
-
-    }
+    betButton = new Button('bet', x9, buttony2, 45, buttonHeight, "Raise", action_bet);
 
     buttons.push(foldButton);
     buttons.push(checkButton);
@@ -383,7 +592,8 @@ function renderScene() {
     clearFloor();
     renderPlayerIcons();
     renderButtons();
-    renderStats();  
+    renderStats(); 
+    renderRecentActions(); 
     renderCards();
 }
 
@@ -392,7 +602,8 @@ function renderPlayerIcons() {
 
         player = game.players[i];
         dotx = (window.innerWidth - (90 * (game.numberOfPlayers - 1)))/2 + (90 * player.number);
-        infox = dotx + 20;        
+        namex = dotx + 20
+        cashx = dotx + 20;        
         
         context.beginPath();
         context.arc(dotx, 25 , 10, 0, 2 * Math.PI, false);
@@ -408,10 +619,10 @@ function renderPlayerIcons() {
 
         context.font = "14px Century"
         context.fillStyle = 'black'
-        context.fillText(player.name, infox, 50)
+        context.fillText(player.name, namex, 50)
 
         context.fillStyle = 'white'
-        context.fillText("$" + player.balance, infox, 29) 
+        context.fillText("$" + player.balance, cashx, 29) 
 
     }
 }
@@ -448,6 +659,49 @@ function renderStats() {
     context.font = 'Bold 64px Century'
     context.fillStyle = 'black'
     context.fillText("$" + player.balance, x, y);
+
+    x = percentageToAbsolute(0.379, true)
+    y = percentageToAbsolute(0.805, false)
+
+    context.font = "Bold 36px Century"
+    context.fillText("$" + player_raise_amount, x, y)
+
+    x = percentageToAbsolute(0.379, true)
+    y = percentageToAbsolute(0.543, false)
+
+    context.font = "Bold 24px Century"
+    context.fillText("Round " + roundCounter, x, y)
+
+    x = percentageToAbsolute(0.521, true)
+    context.fillText(currentPlayerName + "'s turn", x, y)
+
+    x = percentageToAbsolute(0.45, true)
+    y = percentageToAbsolute(0.45, false)
+    context.font = "Bold 30px Century"
+    context.fillText("Pot: $" + potCounter, x, y)
+}
+
+function renderRecentActions() {
+    context.globalAlpha = 0.8
+    x = percentageToAbsolute(0.726, true)
+    y = percentageToAbsolute(0.2, false)
+    width = percentageToAbsolute(0.24, true)
+    height = percentageToAbsolute(0.7, false)
+    context.fillStyle = 'white'
+    context.fillRect(x, y, width, height)
+    context.globalAlpha = 1;
+
+    constx = 0.732
+    initialy = 0.24
+
+    context.fillStyle = 'black'
+    context.font = "Bold 18px Century"
+
+    for (i = 0; i < recentActions.length; i++) {
+        x = percentageToAbsolute(constx, true)
+        y = percentageToAbsolute(initialy + 0.045 * i, false)
+        context.fillText(recentActions[i], x, y)
+    }
 }
 
 function renderCards() {
@@ -479,15 +733,13 @@ function renderStartingHand() {
 
 function renderCommunityCards() {
     cards = game.community_cards
-    ypercentage = 0.375;
+    ypercentage = 0.25;
     startxpercentage = 0.3566;
     offsetPercentage = 0.05882;
     
     startx = percentageToAbsolute(startxpercentage, true);
     offset = percentageToAbsolute(offsetPercentage, true);
     y = percentageToAbsolute(ypercentage, false);
-
-    console.log(startx, offset, y)
 
     for (i = 0; i < cards.length; i++) {
         renderCard(cards[i], startx + (i * 80), y);
