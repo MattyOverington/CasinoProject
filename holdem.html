@@ -21,6 +21,7 @@
 //Global Variable Initializtion and Stuffs
 var card_height = 384 / 4;
 var card_width = 923 / 13;
+var showPlayerPockets = false
 
 var action_fold = "fold"
 var action_call = "call"
@@ -125,12 +126,16 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     this.player_bets = [];
     this.player_order = [];
     this.player_order_copy = [];
+    this.busted_players = [];
 
     this.last_raising_player_index = null
 
     for (i = 0; i < numberOfPlayers; i++) {
         this.player_order.push(i);
+        this.player_bets.push(0);
     }
+
+    this.hands = ["Straight Flush", "Four of a Kind", "Full House", "Flush", "Straight", "Three of a Kind", "Two Pair", "Pair", "Junk"]
 
 
     this.bigBlind = this.smallBlind * 2;
@@ -141,7 +146,6 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
         this.community_cards = [];
         this.pot = 0;
         this.player_actions = ["Round " + this.roundNum + " Started"];
-        this.player_bets = [];
         this.bigBlind = this.smallBlind * 2;
         this.minimumBet = this.smallBlind;
 
@@ -158,6 +162,8 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
             }
         }
 
+        console.log(this.player_order)
+
         
         this.player_order_copy = this.player_order.slice()
 
@@ -166,11 +172,15 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
         for (i = 0; i < len; i++) {
             player = this.players[i]
             player.currentHand = []
-            this.player_bets.push(0)
+            this.player_bets[i] = 0
         }
 
-        for (i = 0; i < len; i++) {this.giveCard(i)}
-        for (i = 0; i < len; i++) {this.giveCard(i)}
+        for (i = 0; i < len; i++) {
+            this.giveCard(i)
+        }
+        for (i = 0; i < len; i++) {
+            this.giveCard(i)
+        }
 
         blind_player_index = this.player_order[this.player_order.length - 1]
         sblind_player_index = this.player_order[this.player_order.length - 2]
@@ -235,7 +245,7 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
                         self.startBettingRound(i + 1)
                     }
                 }
-            }, 1000)
+            }, 500)
         }
     }
 
@@ -299,7 +309,6 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
         } else if (action == action_allIn) {
             this.bet(player, player.balance)
             this.player_order_copy.splice(i, 1)
-            this.player_bets.splice(index, 1)
             player.isAllIn = true
             this.player_actions.push(player.name + " Went All In With $" + player.balance)
         }
@@ -343,6 +352,10 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
             }
         }
 
+        if (this.player_order_copy.length == 1) {
+            continue_betting = false
+        }
+
         if (continue_betting == true) {
             this.bettingRound()
         } else {
@@ -351,8 +364,320 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     }
 
     this.determineWinner = function() {
+        if (this.player_order_copy.length == 1) {
+            winner = this.players[this.player_order_copy[0]]
+            winner.balance += this.pot
+            recentActions.push(winner.name + " won")
+            recentActions.push(winner.name + " took pot of $" + this.pot)
+        } else {
+            this.showdown()
+        }
+        showPlayerPockets = true
+        for (i = 0; i < this.players.length; i++) {
+            player = this.players[i]
+            if (player.balance <= 0) {
+                index = this.player_order.indexOf(i)
+                this.player_order.splice(index, 1)
+                player.is_bust = true
+                recentActions.push(player.name + " bust")
+            }
+        }
+        if (this.player_order.indexOf(0) == -1) {
+            recentActions.push("You Bust!")
+        } else if (this.players.length == 1) {
+            recentActions.push("You won!")
+        } else {
+            self = this
+            recentActions.push("Next Round Beigns in 15 seconds")
+            setTimeout(function() {
+                showPlayerPockets = false
+                self.beginRound()
+            }, 15000)
+        }
+    }
+
+//-----------------------------------------------------------------------------------------------------------
+///----------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------------
+
+    this.showdown = function() {
+        
+        best_hands = []
+
+        for (i = 0; i < this.player_order_copy.length; i++) {
+            best_hands.push(null)
+        }
+
+        for (i1 = 0; i1 < this.player_order_copy.length; i1++) {
+            player = this.players[this.player_order_copy[i1]]
+
+            pockets = player.currentHand
+            available_cards = []
+            available_hands = []
+
+            //Combine community cards and hand together 
+
+            available_cards.push(this.community_cards[0])
+            available_cards.push(this.community_cards[1])
+            available_cards.push(this.community_cards[2])
+            available_cards.push(this.community_cards[3])
+            available_cards.push(this.community_cards[4])
+            available_cards.push(pockets[0])
+            available_cards.push(pockets[1])
+
+            misc_array = [0, 1, 2, 3, 4, 5]
+            //Use this to prevent duplicates being put in. 
+
+            for (a = 0; a < available_cards.length; a++) {
+                temp_hand1 = available_cards.slice()
+
+                temp_hand1.splice(a, 1)
+                for (b = 0; b < misc_array.length; b++) {
+                    x = misc_array[b]
+                    temp_hand = temp_hand1.slice()
+                    temp_hand.splice(x, 1)
+                    if ((a == 6 && x == 5) || (a == 5 && x == 5)) {
+                        //Not a valid hand, too many pocket cards
+                    } else {
+                        temp_hand = this.sortCards(temp_hand)
+                        available_hands.push(temp_hand) 
+                        if (b == misc_array.length - 1) {
+                            misc_array.splice(0, 1)
+                        }
+                    }
+                }
+            }
+
+
+
+
+            //Find best hand from the bunch
+
+            best_hand = null
+            best_rating = 1000
+
+            for (a = 0; a < available_hands.length; a++) {
+                hand = available_hands[a]
+
+                rating = this.determineHand(hand)
+
+                if (rating < best_rating) {
+                    best_hand = hand
+                    best_rating = rating
+                } else if (rating == best_rating) {
+                    better = this.compareHands(hand, best_hand)
+                    if (better == 0) {
+                        best_hand = hand
+                    } else {
+                        //No change
+                    }
+                }
+
+            }
+
+            best_hands[this.player_order_copy[i1]] = best_hand
+            console.log(this.player_order_copy[i1])
+
+        }
+
+        //Now find best best hand
+        best_hand = null
+        best_rating = 1000
+        best_hand_index = 0
+
+
+        drawn_hand = null
+        drawn_players = []
+
+        for (a = 0; a < best_hands.length; a++) {
+            hand = best_hands[a]
+            if (hand != null) {
+                rating = this.determineHand(hand)
+
+                if (rating < best_rating) {
+                    best_hand = hand
+                    best_rating = rating
+                    best_hand_index = a
+                } else if (rating == best_rating) {
+                    better = this.compareHands(hand, best_hand)
+                    if (better == 0) {
+                        best_hand = hand
+                    } else if (better == 1) {
+                        //No change
+                    } else if (better == null) {
+                        drawn_hand = hand.splice()
+                        drawn_players.push(a)
+                    }
+                }
+            }
+
+        }
+
+        //Do winner things
+
+        console.log(best_hand, best_rating, this.players[best_hand_index])
+
+        if (drawn_hand == best_hand) {
+            console.log(best_hand, this.hands[best_rating], drawn_players)
+
+            split = this.pot / drawn_players.length
+            drawn_player_names = ""
+
+            if (Math.ceil(split) != split + 1) {
+                split = Math.ceil(split)
+            }
+            for (ka = 0; ka < drawn_players.length; ka++) {
+                player = this.players[drawn_players[ka]]
+                player.balance += split
+                recentActions.push(player.name + " drew and won $" + split)
+            }
+        } else {
+            winner = this.players[best_hand_index]
+            winner.balance += this.pot
+            recentActions.push(winner.name + " won with " + this.hands[best_rating])
+            recentActions.push(winner.name + " took pot of $" + this.pot)
+        }
+    }
+
+    this.compareHands = function(first_hand, second_hand) {
+        //Array to get best hand from two of the same type of hand
+        rating = this.determineHand(first_hand)
+
+        if (rating == 0 || rating == 3 || rating == 4 || rating == 8) {
+            //Draw determiner for ALL FLUSH, STRAIGHT and JUNK hands
+            for (i = first_hand.length - 1; i >= 0; i--) {
+                //Simply loop backward through the array and compare values for straights, flushes, etcetera
+                first_card = first_hand[i]
+                second_card = second_hand[i]
+                if (first_card.number > second_card.number) {
+                    return 0 
+                } else if (second_card.number > first_card.number) {
+                    return 1
+                } else if (i == 0) {
+                    return null
+                }
+            }
+        } else if (rating == 1) {
+            //Draw determiner for FOUR OF A KIND HANDS
+            //Simply compare first card then last card - if same, return one, check in winner function to split pot
+            if (first_hand[0].number > second_hand[0].number) {
+                return 0
+            } else if (second_hand[0].number > first_hand[0].number) {
+                return 1
+            } else {
+                if (first_hand[4].number > second_hand[4].number) {
+                    return 0
+                } else if (second_hand[4].number > first_hand[4].number) {
+                    return 1
+                } else {
+                    return null
+                }
+            }
+        } else if (rating == 2) {
+            //Draw determiner for FULL HOUSE HANDS
+            // First find out where trio is for both hands
+            first_trio_position = -1
+            second_trio_position = -1
+
+            if (first_hand[1].number == first_hand[2].number) {
+                first_trio_position = 0
+            } else {
+                first_trio_position = 2
+            }
+
+            if (second_hand[1].number == second_hand[2].number) {
+                second_trio_position = 0
+            } else {
+                second_trio_position = 2
+            }
+
+            second_pair_position = Math.abs(second_trio_position - 2)
+            first_pair_position = Math.abs(first_trio_position - 2)
+
+            //Now compare trio, then pair
+
+            if (second_hand[second_trio_position].number > first_hand[first_trio_position]) {
+                return 1
+            } else if ((second_hand[second_trio_position].number < first_hand[first_trio_position])) {
+                return 0
+            } else {
+                if (second_hand[second_pair_position].number > first_hand[first_pair_position]) {
+                    return 1
+                } else if ((second_hand[second_pair_position].number < first_hand[first_pair_position])) {
+                    return 0
+                } else {
+                    return null
+                }
+            }
+
+        } else if (rating == 5) {
+            //Draw determiner for THREE OF A KIND HANDS
+            //compare first two then loop back
+
+            if (second_hand[0].number > first_hand[0].number) {
+                return 1
+            } else if (second_hand[0].number < first_hand[0].number) {
+                return 0
+            } else {
+                for (i = 4; i >= 3; i--) {
+                    if (second_hand[i].number > first_hand[i].number) {
+                        return 1
+                    } else if (second_hand[i].number < first_hand[i].number) {
+                        return 0
+                    } else if (i == 3) {
+                        return null
+                    }
+                }
+            }
+        } else if (rating == 6) {
+            //Draw determiner for TWO PAIR HANDS
+            //Compare first pair, then second pair, then last cards
+            if (second_hand[0].number > first_hand[0].number) {
+                return 1
+            } else if (second_hand[0].number < first_hand[0].number) {
+                return 0
+            } else {
+                if (second_hand[2].number > first_hand[2].number) {
+                    return 1
+                } else if (second_hand[2].number < first_hand[2].number) {
+                    return 0
+                } else {
+                    if (second_hand[4].number > first_hand[4].number) {
+                        return 1
+                    } else if (second_hand[4].number < first_hand[4].number) {
+                        return 0
+                    } else {
+                        return null
+                    }
+                }
+            }
+        } else if (rating == 7) {
+            //Draw determiner for PAIR HANDS
+            //Compare first then loop back
+            if (second_hand[0].number > first_hand[0].number) {
+                return 1
+                } else if (second_hand[0].number < first_hand[0].number) {
+                    return 0
+                } else {
+                    for (i = 4; i >= 2; i--) {
+                        if (second_hand[i].number > first_hand[i].number) {
+                            return 1
+                        } else if (second_hand[i].number < first_hand[i].number) {
+                            return 0
+                        } else if (i == 2) {
+                            return null
+                        }
+                    }
+                }
+
+        }
+
 
     }
+
+//------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------
 
     this.bet = function(player, amount) {
         this.pot += amount;
@@ -394,9 +719,11 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     this.dealRiver = function() {
         this.community_cards.push(this.dealCard())
 
-        this.nextStage = this.determineWinner()
+        this.nextStage = this.determineWinner
 
         recentActions.push("River")
+
+        console.log(this.determineHand(this.community_cards))
 
         renderScene()
 
@@ -419,10 +746,10 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
     }
 
     this.dealCard = function() {
-        i = this.deck[0];
+        cardz = this.deck[0];
 
         this.deck.splice(0, 1);
-        return i;
+        return cardz    ;
     }
 
     this.giveCard = function(p) {
@@ -444,6 +771,10 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
 
         this.deck = temp;
     }
+
+//------------------------------------------------------------------------------------------------
+//-------------------------------- CARD AND WINNER HANDLING --------------------------------------
+//------------------------------------------------------------------------------------------------
 
 
     this.sortCards = function(cards) {
@@ -494,6 +825,116 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
 
         return new_cards
     }
+
+    this.determineHand = function(cards) {
+        cards = this.sortCards(cards)
+
+        if (this.isStraight(cards) && this.isFlush(cards)) {
+            return 0
+        } else if (this.isFourK(cards)) {
+            return 1
+        } else if (this.isFullHouse(cards)) {
+            return 2
+        } else if (this.isFlush(cards)) {
+            return 3
+        } else if (this.isStraight(cards)) {
+            return 4
+        } else if (this.isThreeK(cards)) {
+            return 5
+        } else if (this.isTwoPair(cards)) {
+            return 6
+        } else if (this.isPair(cards)) {
+            return 7
+        } else {
+            return 8
+        }
+    }
+
+    this.isStraight = function(cards) {
+        straight = true
+        if (cards[0].number==2&&cards[1].number==3&&cards[2].number==4&&cards[3].number==5&&cards[4].number==14) {
+            straight = true
+        } else {
+            for (i = 0; i < cards.length - 1; i++) {
+                if (cards[i].number != cards[i + 1].number) {
+                    straight = false
+                }
+            }
+        }
+        return straight
+    }
+
+    this.isFlush = function(cards) {
+        flush = true
+        for (i = 0; i < cards.length - 1; i++) {
+            if (cards[i].suit != cards[i+1].suit) {
+                flush = false
+            }
+        }
+        return flush
+    }
+
+    this.isFourK = function(cards) {
+        isfour = true   
+        for (i = 0; i < cards.length - 2; i++) {
+            if (cards[i].number != cards[i + 1].number) {
+                isfour = false
+            }
+        }
+        return isfour
+    }
+
+    this.isFullHouse = function(cards) {
+        isfull = false
+
+        if (cards[0].number == cards[1].number) {
+            //First two are pair
+            if (cards[1].number == cards[2].number) {
+                //First three are trio
+                if (cards[3].number == cards[4].number) {
+                    //Last two are pair, full house!
+                    isfull = true
+                }
+            } else if (cards[2].number == cards[3].number && cards[3].number == cards[4].number) {
+                //Last 3 are trio
+                isfull = true
+            }
+        } 
+
+        return isfull
+    }
+
+    this.isThreeK = function(cards) {
+        isthree = false
+        if (cards[0].number == cards[1].number) {
+            if (cards[1].number == cards[2].number) {
+                isthree = true
+            }
+        }
+        return isthree
+    }
+
+    this.isTwoPair = function(cards) {
+        istwo = false
+        if (cards[0].number == cards[1].number) {
+            if (cards[2].number == cards[3].number) {
+                istwo = true
+            }
+        } 
+        return istwo
+    }
+
+    this.isPair = function(cards) {
+        ispair = false
+        if (cards[0].number == cards[1].number) {
+            ispair = true
+        }
+        return ispair
+    }
+
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------
 
 
     this.initPlayers = function() {
@@ -600,6 +1041,7 @@ function Player (number, colour, name, balance, isAI) {
     this.balance = balance;
     this.rank = 0;
     this.isAI = isAI;
+    this.is_bust = false
 
     this.currentHand = [];
     this.hasCurrentTurn = false;
@@ -765,6 +1207,10 @@ function renderScene() {
     renderStats(); 
     renderRecentActions(); 
     renderCards();
+
+    if (showPlayerPockets == true) {
+        renderPocketCards();
+    }
 }
 
 function renderPlayerIcons() {
@@ -798,10 +1244,30 @@ function renderPlayerIcons() {
 
         if (game.player_bets[i] == null) {
             context.fillText("Folded", cashx, 71)
+        } else if (game.players[i].is_bust == true) {
+            context.fillStyle = "Red"
+            context.fillText("Busted", cashx, 71)
         } else {
             context.fillText("$" + game.player_bets[i], cashx, 71)
         }
 
+    }
+}
+
+function renderPocketCards() {
+    for (i1 = 0; i1 < game.player_order_copy.length; i1++) {
+        index = game.player_order_copy[i1]
+        player = game.players[index]
+
+        pockets = player.currentHand
+
+        cardy = 85
+        initialx = (window.innerWidth - (90 * (game.numberOfPlayers - 1)))/2 + (90 * player.number);
+        xoffset = 20
+
+        for (j = 0; j < 2; j++) {
+            renderSmallerCard(pockets[j], initialx + (xoffset * j), cardy)
+        }
     }
 }
 
@@ -880,8 +1346,27 @@ function renderRecentActions() {
     for (i = recentActions.length - 1; i >= 0; i--) {
         x = percentageToAbsolute(constx, true)
         y = percentageToAbsolute(initialy + 0.045 * (recentActions.length - i), false)
+        if (isSpecialEvent(recentActions[i]) != null) {
+            context.fillStyle = isSpecialEvent(recentActions[i])
+        } else {
+            context.fillStyle = "black"
+        }
         context.fillText(recentActions[i], x, y)
     }
+}
+
+function isSpecialEvent(event_name) {
+    if (event_name == "River" || event_name == "Flop" || event_name == "Turn") {
+        return "blue"
+    } if (event_name.split(" ")[0] == "Round") {
+        return "green" 
+    } if (event_name.split(" ")[1] == "won") {
+        return "orange"
+    } if (event_name.split(" ")[1] == "took") {
+        return "orange"
+    }
+    
+    return null
 }
 
 function renderCards() {
@@ -943,6 +1428,25 @@ function renderCard(card, x, y) {
 
     
     context.drawImage(card_img, pixelsLeft, pixelsTop, card_width, card_height, x, y, card_width, card_height);
+}
+
+function renderSmallerCard(card, x, y) {
+
+    suits = ["D", "H", "C", "S"];
+
+    row = suits.indexOf(card.suit);  
+
+    if (card.number == 14) {
+        column = 0
+    } else {
+        column = card.number - 1;   
+    }
+
+    pixelsLeft = card_width * column;
+    pixelsTop = card_height * row;
+
+    
+    context.drawImage(card_img, pixelsLeft, pixelsTop, card_width, card_height, x, y, card_width/1.4, card_height/1.4);  
 }
 
 function clearFloor() {
