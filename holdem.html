@@ -43,6 +43,8 @@ initButtons();
 
 window.addEventListener('mousedown', interperateClick);
 window.addEventListener('mousemove', interperateMove);
+window.addEventListener('touchstart', interperateContact);
+window.addEventListener('touchend', interperatePress)
 
 
 //Game Initialization
@@ -87,7 +89,31 @@ setTimeout(function() {
 }, 2000);
 
 
-//Testing shit
+//Testing Shit Area -----------------------------------------------------------------------------------
+card1 = new Card("H", 4)
+card2 = new Card("H", 5)
+card3 = new Card("D", 6)
+card4 = new Card("S", 7)
+card5 = new Card("H", 8)
+
+hand1 = [card1, card2, card3, card4, card5]
+
+card6 = new Card("H", 4)
+card7 = new Card("H", 5)
+card8 = new Card("D", 6)
+card9 = new Card("S", 7)
+card10 = new Card("H", 8)
+
+hand2 = [card6, card7, card8, card9, card10]
+
+hand1 = game.sortCards(hand1)
+hand2 = game.sortCards(hand2)
+
+console.log(hand1, hand2)
+console.log(game.determineHand(hand1), game.determineHand(hand2))
+console.log(game.compareHands(hand1, hand2))
+
+//-----------------------------------------------------------------------------------------------------
 
 
 
@@ -145,7 +171,7 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
         this.roundNum += 1
         this.community_cards = [];
         this.pot = 0;
-        this.player_actions = ["Round " + this.roundNum + " Started"];
+        this.player_actions.push("Round " + this.roundNum + " Started");
         this.bigBlind = this.smallBlind * 2;
         this.minimumBet = this.smallBlind;
 
@@ -237,7 +263,11 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
                 if (i + 1 == self.last_raising_player_index || (self.last_raising_player_index == 0 &&  i == self.player_order_copy.length - 1)) {
                     self.determineEndOfBettingRound()
                 } else if (action == action_fold || action == action_allIn) {
-                    self.startBettingRound(i)
+                    if (i == self.player_order_copy.length) { 
+                        self.startBettingRound(0)
+                    } else {
+                        self.startBettingRound(i)
+                    }
                 } else {
                     if (i == self.player_order_copy.length - 1) { 
                         self.startBettingRound(0)
@@ -265,7 +295,11 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
             if (ind + 1 == self.last_raising_player_index || (self.last_raising_player_index == 0 &&  ind == self.player_order_copy.length - 1)) {
                     self.determineEndOfBettingRound()
                 } else if (action == action_fold || action == action_allIn) {
-                    self.startBettingRound(ind)
+                    if (ind == self.player_order_copy.length) { 
+                        self.startBettingRound(0)
+                    } else {
+                        self.startBettingRound(ind)
+                    }
                 } else {
                     if (ind == self.player_order_copy.length - 1) { 
                         self.startBettingRound(0)
@@ -375,7 +409,7 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
         showPlayerPockets = true
         for (i = 0; i < this.players.length; i++) {
             player = this.players[i]
-            if (player.balance <= 0) {
+            if (player.balance <= 0 && player.is_bust == false) {
                 index = this.player_order.indexOf(i)
                 this.player_order.splice(index, 1)
                 player.is_bust = true
@@ -388,7 +422,6 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
             recentActions.push("You won!")
         } else {
             self = this
-            recentActions.push("Next Round Beigns in 15 seconds")
             setTimeout(function() {
                 showPlayerPockets = false
                 self.beginRound()
@@ -476,17 +509,15 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
             }
 
             best_hands[this.player_order_copy[i1]] = best_hand
-            console.log(this.player_order_copy[i1])
 
         }
 
         //Now find best best hand
+        console.log(best_hands)
         best_hand = null
         best_rating = 1000
         best_hand_index = 0
 
-
-        drawn_hand = null
         drawn_players = []
 
         for (a = 0; a < best_hands.length; a++) {
@@ -498,14 +529,17 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
                     best_hand = hand
                     best_rating = rating
                     best_hand_index = a
+                    drawn_players = []
                 } else if (rating == best_rating) {
                     better = this.compareHands(hand, best_hand)
                     if (better == 0) {
                         best_hand = hand
+                        best_rating = rating
+                        best_hand_index = a
+                        drawn_players = []
                     } else if (better == 1) {
                         //No change
                     } else if (better == null) {
-                        drawn_hand = hand.splice()
                         drawn_players.push(a)
                     }
                 }
@@ -513,11 +547,11 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
 
         }
 
+        console.log(this.players[best_hand_index], best_hand)
+
         //Do winner things
 
-        console.log(best_hand, best_rating, this.players[best_hand_index])
-
-        if (drawn_hand == best_hand) {
+        if (drawn_players.length > 0) {
             console.log(best_hand, this.hands[best_rating], drawn_players)
 
             split = this.pot / drawn_players.length
@@ -596,14 +630,14 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
 
             //Now compare trio, then pair
 
-            if (second_hand[second_trio_position].number > first_hand[first_trio_position]) {
+            if (second_hand[second_trio_position].number > first_hand[first_trio_position].number) {
                 return 1
-            } else if ((second_hand[second_trio_position].number < first_hand[first_trio_position])) {
+            } else if ((second_hand[second_trio_position].number < first_hand[first_trio_position].number)) {
                 return 0
             } else {
-                if (second_hand[second_pair_position].number > first_hand[first_pair_position]) {
+                if (second_hand[second_pair_position].number > first_hand[first_pair_position].number) {
                     return 1
-                } else if ((second_hand[second_pair_position].number < first_hand[first_pair_position])) {
+                } else if ((second_hand[second_pair_position].number < first_hand[first_pair_position].number)) {
                     return 0
                 } else {
                     return null
@@ -631,6 +665,7 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
             }
         } else if (rating == 6) {
             //Draw determiner for TWO PAIR HANDS
+            //first find highest pair for each hand
             //Compare first pair, then second pair, then last cards
             if (second_hand[0].number > first_hand[0].number) {
                 return 1
@@ -856,7 +891,7 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
             straight = true
         } else {
             for (i = 0; i < cards.length - 1; i++) {
-                if (cards[i].number != cards[i + 1].number) {
+                if (cards[i].number != (cards[i + 1].number - 1)) {
                     straight = false
                 }
             }
@@ -1112,6 +1147,8 @@ function interperateClick(event) {
                 if (i == 3 || i == 4 || i == 5 || i == 6 ) {
                     player_raise_amount += button.action
                 } else if (i == 0 || i == 1 || i == 2 || i == 7 || i == 8) {
+                    button.enabled = false
+                    button.isHover = false
                     continueRound(button.action)
                 }
             }
@@ -1136,6 +1173,14 @@ function interperateMove(event) {
             button.isHover = false
         }
     }
+}
+
+function interperateContact(event) {
+    interperateMove(event)
+}
+
+function interperatePress(event) {
+    interperateClick(event)
 }
 
 function initButtons() {
@@ -1273,9 +1318,20 @@ function renderPocketCards() {
 
 function renderButtons() {
     for(i = 0; i < buttons.length; i++) {
+
+        xpercentage = button.x / 1360
+        ypercentage = button.y / 681
+        widthpercentage = button.width / 1360
+        heightpercentage = button.height / 681
+
+        buttonx = percentageToAbsolute(xpercentage, true)
+        buttony = percentageToAbsolute(ypercentage, false)
+        buttonwidth = percentageToAbsolute(widthpercentage, true)
+        buttonheight = percentageToAbsolute(heightpercentage, false)
+
         button = buttons[i];
         context.beginPath();
-        context.rect(button.x, button.y, button.width, button.height);
+        context.rect(buttonx, buttony, button.width, button.height);
         if (button.isHover == true) {
             context.strokeStyle = 'orange';
         } else {
@@ -1364,6 +1420,8 @@ function isSpecialEvent(event_name) {
         return "orange"
     } if (event_name.split(" ")[1] == "took") {
         return "orange"
+    } if (event_name.split(" ")[-1] == "bust") {
+        return "red"
     }
     
     return null
