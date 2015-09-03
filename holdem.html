@@ -416,10 +416,13 @@ function Game (numberOfPlayers, initialCash, initialSmallBlind, blindRaiseInterv
                 recentActions.push(player.name + " bust")
             }
         }
+
+        recentActions.push("~~~~~~~~~~~~~~~~~~~~~~~~~~")
+
         if (this.player_order.indexOf(0) == -1) {
-            recentActions.push("You Bust!")
+            alert("Git Gud N00B")
         } else if (this.players.length == 1) {
-            recentActions.push("You won!")
+            alert("OMG MLG CONFIRMED PLZ JOIN MY COMP TEAM")
         } else {
             self = this
             setTimeout(function() {
@@ -1222,7 +1225,7 @@ function initButtons() {
 
     add10button = new Button('raise 10', x6, buttony2, 30, buttonHeight, "$10", 10);
 
-    add50button = new Button('raise 50', x7, buttony2, 30, buttonHeight, "$50", 50);
+    add50button = new Button('raise 50', x7, buttony2, 32, buttonHeight, "$50", 50);
 
     add100button = new Button('raise 100', x8, buttony2, 40, buttonHeight, "$100", 100);
 
@@ -1319,15 +1322,17 @@ function renderPocketCards() {
 function renderButtons() {
     for(i = 0; i < buttons.length; i++) {
 
+        button = buttons[i];
+
         widthpercentage = button.width / 1360
         heightpercentage = button.height / 681
 
         buttonwidth = percentageToAbsolute(widthpercentage, true)
         buttonheight = percentageToAbsolute(heightpercentage, false)
 
-        button = buttons[i];
+        
         context.beginPath();
-        context.rect(button.x, button.y, button.width, button.height);
+        context.rect(button.x, button.y, buttonwidth, buttonheight);
         if (button.isHover == true) {
             context.strokeStyle = 'orange';
         } else {
@@ -1338,9 +1343,12 @@ function renderButtons() {
         context.stroke()
         context.fill()
 
-        context.font = "14px Century"
+        textpercentage = 14 / 1390
+        textvalue = percentageToAbsolute(textpercentage, true)
+
+        context.font = textvalue + "px Century"
         context.fillStyle = 'white'
-        context.fillText(button.displayText, button.x + 5, button.y + 13)
+        context.fillText(button.displayText, button.x + 5, button.y + percentageToAbsolute(14/681, false))
     }
 }
 function renderStats() {
@@ -1376,20 +1384,25 @@ function renderStats() {
 }
 
 function renderRecentActions() {
+
     context.globalAlpha = 0.8
     x = percentageToAbsolute(0.726, true)
-    y = percentageToAbsolute(0.2, false)
+    y = percentageToAbsolute(0.25, false)
+
     width = percentageToAbsolute(0.24, true)
     height = percentageToAbsolute(0.7, false)
+    text = percentageToAbsolute(18/1360, true)
+
     context.fillStyle = 'white'
     context.fillRect(x, y, width, height)
     context.globalAlpha = 1;
 
     constx = 0.732
-    initialy = 0.24- 0.045
+    initialy = 0.29 - 0.045
+
 
     context.fillStyle = 'black'
-    context.font = "Bold 18px Century"
+    context.font = "Bold " + text + "px Century"
 
     if (recentActions.length >= 16) {
         recentActions.splice(0, 1)
@@ -1446,7 +1459,7 @@ function renderStartingHand() {
     y = percentageToAbsolute(ypercentage, false)
 
     for (i = 0; i < 2; i ++) {
-        renderCard(cards[i], startx + (i * 40), y);
+        renderCard(cards[i], startx + (i * percentageToAbsolute(40/1360, true)), y);
     }
 }
 
@@ -1461,7 +1474,7 @@ function renderCommunityCards() {
     y = percentageToAbsolute(ypercentage, false);
 
     for (i = 0; i < cards.length; i++) {
-        renderCard(cards[i], startx + (i * 80), y);
+        renderCard(cards[i], startx + (i * percentageToAbsolute(80/1360, true)), y);
     }
 }
 
@@ -1480,8 +1493,13 @@ function renderCard(card, x, y) {
     pixelsLeft = card_width * column;
     pixelsTop = card_height * row;
 
+    widthp = card_width / 1360
+    heightp = card_height / 681
+
+    width = percentageToAbsolute(widthp, true)
+    height = percentageToAbsolute(heightp, false)
     
-    context.drawImage(card_img, pixelsLeft, pixelsTop, card_width, card_height, x, y, card_width, card_height);
+    context.drawImage(card_img, pixelsLeft, pixelsTop, card_width, card_height, x, y, width, height);
 }
 
 function renderSmallerCard(card, x, y) {
