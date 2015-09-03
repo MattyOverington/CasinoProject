@@ -1319,19 +1319,15 @@ function renderPocketCards() {
 function renderButtons() {
     for(i = 0; i < buttons.length; i++) {
 
-        xpercentage = button.x / 1360
-        ypercentage = button.y / 681
         widthpercentage = button.width / 1360
         heightpercentage = button.height / 681
 
-        buttonx = percentageToAbsolute(xpercentage, true)
-        buttony = percentageToAbsolute(ypercentage, false)
         buttonwidth = percentageToAbsolute(widthpercentage, true)
         buttonheight = percentageToAbsolute(heightpercentage, false)
 
         button = buttons[i];
         context.beginPath();
-        context.rect(buttonx, buttony, button.width, button.height);
+        context.rect(button.x, button.y, button.width, button.height);
         if (button.isHover == true) {
             context.strokeStyle = 'orange';
         } else {
